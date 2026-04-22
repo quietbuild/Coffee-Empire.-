@@ -1,100 +1,250 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Coffee Empire – Idle Tycoon</title>
-<script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-:root{
-  --bg:#07040200;--s0:#0c0804;--s1:#131009;--s2:#1a140a;
-  --border:#281a0c;--a1:#c4800e;--a2:#e09c28;--a3:#f8be40;
-  --hot:#ff5500;--green:#3dd68c;--text:#f0e0c0;--t2:#b08850;--t3:#705830;
-  --glow:0 0 18px rgba(196,128,14,.4),0 0 44px rgba(196,128,14,.14);
-  --r:12px;--rs:7px;
+      p.x+=p.vx;p.y+=p.vy;p.vy+=p.g;p.vx*=.96;p.l-=p.d;
+      if(p.l<=0){pts.splice(i,1);continue;}
+      ctx.globalAlpha=p.l;ctx.fillStyle=p.c;
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r*p.l,0,Math.PI*2);ctx.fill();
+    }
+    ctx.globalAlpha=1;
+    requestAnimationFrame(lp);
+  })();
+  return{burst(x,y,n=10,big=false){
+    for(let i=0;i<n;i++){
+      const a=(Math.PI*2*i/n)+Math.random()*.8;
+      const sp=big?(2.5+Math.random()*6):(1.3+Math.random()*2.8);
+      pts.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-(big?2.8:1.5),l:1,d:big?.013:.02,r:big?(3+Math.random()*5):(1.8+Math.random()*3),c:cols[0|Math.random()*cols.length],g:.1});
+    }
+  }};
+})();
+
+const GENS=[
+  {id:'cart',name:'Street Cart',e:'🛒',base:15,mult:1.15,cps:.1,tip:'A cart, a dream, and a kettle.'},
+  {id:'drip',name:'Pour-Over Bar',e:'☕',base:100,mult:1.15,cps:.5,tip:'Artisanal. Hipsters approve.'},
+  {id:'espresso',name:'Espresso Machine',e:'⚙️',base:500,mult:1.15,cps:2,tip:'High-pressure Italian craft.'},
+  {id:'barista',name:'Barista',e:'👨‍🍳',base:2000,mult:1.15,cps:8,tip:'A true artisan of the bean.'},
+  {id:'truck',name:'Coffee Truck',e:'🚐',base:8000,mult:1.15,cps:25,tip:'Mobile caffeine. City is yours.'},
+  {id:'cafe',name:'Café Location',e:'🏠',base:35000,mult:1.15,cps:80,tip:'Brick and mortar. You made it.'},
+  {id:'roaster',name:'Roasting Facility',e:'🔥',base:150000,mult:1.15,cps:250,tip:'Own the whole supply chain.'},
+  {id:'chain',name:'Franchise Chain',e:'🏢',base:600000,mult:1.15,cps:750,tip:'Your logo on every corner.'},
+  {id:'app',name:'Coffee App',e:'📱',base:2500000,mult:1.15,cps:2500,tip:'Subscriptions while you sleep.'},
+  {id:'brand',name:'Global Brand',e:'🌍',base:12000000,mult:1.15,cps:8000,tip:'Antarctica is next.'},
+];
+const UPGS=[
+  {id:'u1',n:'Better Beans',e:'🌱',cost:80,eff:{t:'cpcA',v:.5},req:null,d:'+$0.50 per click.'},
+  {id:'u2',n:'Hand-Ground Espresso',e:'☕',cost:400,eff:{t:'cpcM',v:2},req:{g:'drip',n:5},d:'Double your click power.'},
+  {id:'u3',n:'Yirgacheffe Reserve',e:'✨',cost:4000,eff:{t:'cpcM',v:3},req:{g:'espresso',n:5},d:'Triple your click power.'},
+  {id:'u4',n:'Kopi Luwak',e:'💎',cost:40000,eff:{t:'cpcM',v:5},req:{g:'barista',n:10},d:'5× click income.'},
+  {id:'u5',n:'Quantum Roast',e:'⚛️',cost:400000,eff:{t:'cpcM',v:10},req:{g:'truck',n:10},d:'10× click income.'},
+  {id:'u6',n:'Portafilter Upgrade',e:'🔧',cost:1500,eff:{t:'gm',g:'espresso',v:2},req:{g:'espresso',n:10},d:'Espresso machines 2×.'},
+  {id:'u7',n:'Titanium Burrs',e:'⚡',cost:8000,eff:{t:'gm',g:'drip',v:2},req:{g:'drip',n:10},d:'Pour-over bars 2×.'},
+  {id:'u8',n:'Steam Wand Pro',e:'💨',cost:35000,eff:{t:'gm',g:'barista',v:3},req:{g:'cafe',n:5},d:'Baristas 3× more effective.'},
+  {id:'u9',n:'GPS Fleet Optimizer',e:'🗺️',cost:120000,eff:{t:'gm',g:'truck',v:2},req:{g:'truck',n:20},d:'Coffee trucks 2×.'},
+  {id:'u10',n:'Robo-Barista Arms',e:'🦾',cost:600000,eff:{t:'gm',g:'cafe',v:3},req:{g:'cafe',n:15},d:'Cafés 3× income.'},
+  {id:'u11',n:'Craft Roast Protocol',e:'🔥',cost:2500000,eff:{t:'gm',g:'roaster',v:2},req:{g:'roaster',n:10},d:'Roasting 2× faster.'},
+  {id:'u12',n:'Franchise Playbook',e:'📘',cost:7000000,eff:{t:'gm',g:'chain',v:2},req:{g:'chain',n:10},d:'Franchises 2×.'},
+  {id:'u13',n:'Staff Training',e:'🎓',cost:1000,eff:{t:'glob',v:1.1},req:{g:'barista',n:1},d:'+10% all income.'},
+  {id:'u14',n:'Loyalty Cards',e:'💳',cost:5000,eff:{t:'glob',v:1.2},req:{spent:500},d:'+20% all income.'},
+  {id:'u15',n:'Instagram Campaign',e:'📷',cost:25000,eff:{t:'glob',v:1.25},req:{earned:10000},d:'+25% all income.'},
+  {id:'u16',n:'Podcast Sponsorship',e:'🎙️',cost:180000,eff:{t:'glob',v:1.4},req:{earned:100000},d:'+40% all income.'},
+  {id:'u17',n:'Super Bowl Ad',e:'📺',cost:900000,eff:{t:'glob',v:1.75},req:{earned:1000000},d:'+75% all income.'},
+  {id:'u18',n:'Space Sponsorship',e:'🚀',cost:4500000,eff:{t:'glob',v:2},req:{earned:5000000},d:'×2 all income.'},
+  {id:'u19',n:'Caffeine Patent',e:'⚗️',cost:18000000,eff:{t:'glob',v:3},req:{earned:20000000},d:'×3 all income.'},
+  {id:'u20',n:'Time Crystal Grind',e:'🔮',cost:9e7,eff:{t:'glob',v:5},req:{earned:9e7},d:'×5 all income.'},
+  {id:'u21',n:'Rival Sabotage Shield',e:'🛡️',cost:2000,eff:{t:'repD',v:.5},req:{earned:500},d:'Rival attacks drain 50% less reputation and steal 50% less cash.'},
+  {id:'u22',n:'Reputation Manager',e:'⭐',cost:12000,eff:{t:'repS',v:1.5},req:{earned:5000},d:'Reputation recovers 1.5× faster.'},
+  {id:'u23',n:'Secret Recipe',e:'📜',cost:60000,eff:{t:'cpcA',v:5},req:{g:'cafe',n:3},d:'+$5 per click. Classified.'},
+  {id:'u24',n:'Premium Membership',e:'👑',cost:300000,eff:{t:'glob',v:1.5},req:{earned:200000},d:'+50% all income.'},
+  {id:'u25',n:'Orbital Coffee Lab',e:'🛸',cost:5e8,eff:{t:'cpcM',v:50},req:{earned:1e8},d:'50× click power. Zero gravity.'},
+];
+const ACHS=[
+  {id:'c1',e:'☕',n:'First Pour',d:'Make your first click.',ok:s=>s.clicks>=1},
+  {id:'c2',e:'⚡',n:'Caffeinated',d:'Click 100 times.',ok:s=>s.clicks>=100},
+  {id:'c3',e:'🔥',n:'Coffee Addict',d:'Click 1,000 times.',ok:s=>s.clicks>=1000},
+  {id:'c4',e:'🤕',n:'RSI Risk',d:'Click 10,000 times.',ok:s=>s.clicks>=10000},
+  {id:'e1',e:'🪙',n:'Pocket Change',d:'Earn $10 total.',ok:s=>s.tot>=10},
+  {id:'e2',e:'💵',n:'First Hundred',d:'Earn $100 total.',ok:s=>s.tot>=100},
+  {id:'e3',e:'💰',n:'Four Figures',d:'Earn $1,000 total.',ok:s=>s.tot>=1000},
+  {id:'e4',e:'🏪',n:'Small Business',d:'Earn $10,000 total.',ok:s=>s.tot>=10000},
+  {id:'e5',e:'🏙️',n:'Coffee Mogul',d:'Earn $100,000 total.',ok:s=>s.tot>=100000},
+  {id:'e6',e:'💎',n:'Millionaire',d:'Earn $1M total.',ok:s=>s.tot>=1e6},
+  {id:'e7',e:'🌟',n:'Coffee Billionaire',d:'Earn $10M total.',ok:s=>s.tot>=1e7},
+  {id:'e8',e:'🌍',n:'Global Tycoon',d:'Earn $1B total.',ok:s=>s.tot>=1e9},
+  {id:'g1',e:'🛒',n:'Humble Beginnings',d:'Buy your first generator.',ok:s=>s.tg>=1},
+  {id:'g2',e:'📈',n:'Scaling Up',d:'Own 10 generators.',ok:s=>s.tg>=10},
+  {id:'g3',e:'🏭',n:'Mass Production',d:'Own 100 generators.',ok:s=>s.tg>=100},
+  {id:'g4',e:'🌐',n:'Full Roster',d:'One of every generator.',ok:s=>GENS.every(g=>(s.g[g.id]||0)>=1)},
+  {id:'x1',e:'⚡',n:'Combo Starter',d:'Reach a 10× combo.',ok:s=>s.maxC>=10},
+  {id:'x2',e:'🌋',n:'Fever Dream',d:'Reach a 50× combo.',ok:s=>s.maxC>=50},
+  {id:'x3',e:'💯',n:'Century Combo',d:'Reach a 100× combo.',ok:s=>s.maxC>=100},
+  {id:'r1',e:'⏰',n:'Morning Rush',d:'Survive a Rush Hour.',ok:s=>s.rushes>=1},
+  {id:'r2',e:'☀️',n:'Always Busy',d:'Survive 10 Rush Hours.',ok:s=>s.rushes>=10},
+  {id:'rv',e:'⚔️',n:'Rival Defeated',d:'Defeat The Dark Roast 5 times.',ok:s=>s.rivalDefeats>=5},
+  {id:'u1x',e:'⬆️',n:'Upgraded',d:'Buy your first upgrade.',ok:s=>s.ub.size>=1},
+  {id:'ua',e:'💯',n:'Fully Equipped',d:'Buy all 25 upgrades.',ok:s=>s.ub.size>=25},
+  {id:'p1',e:'♻️',n:'Reborn',d:'Prestige once.',ok:s=>s.pc>=1},
+  {id:'p2',e:'🔄',n:'Serial Founder',d:'Prestige 3 times.',ok:s=>s.pc>=3},
+  {id:'ps',e:'📊',n:'Money Machine',d:'Reach $1,000/sec.',ok:s=>s.cps>=1000},
+  {id:'dl',e:'📅',n:'Daily Grind',d:'Collect a daily bonus.',ok:s=>s.dailyClaims>=1},
+  {id:'rep',e:'⭐',n:'Beloved',d:'Reach 100% reputation.',ok:s=>s.rep>=100},
+];
+const TIERS=[
+  {n:'Street Vendor',at:0},
+  {n:'Corner Café',at:1000},
+  {n:'Coffee Shop',at:10000},
+  {n:'City Chain',at:100000},
+  {n:'National Brand',at:1e6},
+  {n:'Global Empire',at:1e7},
+];
+const TICKERS=[
+  'Local barista refuses acquisition offer: "Just getting started."',
+  'Area café wins regional latte art championship.',
+  'Coffee prices soar — entrepreneur raises cup price 5¢.',
+  'Study: third coffee of the day makes Mondays 18% more bearable.',
+  'Hipster café opens its 12th "first location" this year.',
+  'Scientists declare coffee a food group. Doctors disagree.',
+  'City council considers zoning laws for coffee empires.',
+  'Rival chain "The Dark Roast Corp" announces major expansion.',
+  'Barista Bot prototype brews 500 cups/min — still worse than a skilled human.',
+  'Coffee subscription app hits 1M users. Founder buys private island.',
+  'Analysts: global caffeine demand up 40% from last decade.',
+  'Dark Roast Corp CEO photographed looking nervous. Coincidence?',
+  'Scientists: smelling coffee grounds boosts productivity by 18%.',
+  'BREAKING: Local coffee mogul overtakes Dark Roast in customer satisfaction.',
+  'New barista school opens. Three-year waiting list.',
+  'Coffee futures hit all-time high. Investors scramble.',
+];
+const NEWS=[
+  {at:10,m:'"Local cart earns first $10. Entrepreneur says: worth it."'},
+  {at:100,m:'"Coffee aficionados discover hidden gem on Main Street."'},
+  {at:1000,m:'"Local café sees surge in demand. Something in the beans?"'},
+  {at:10000,m:'"Coffee mogul opens 3rd location this month."'},
+  {at:100000,m:'"Regional chain turns down $500K acquisition offer."'},
+  {at:1e6,m:'"MILLIONAIRE: The coffee empire is officially born."'},
+  {at:1e7,m:'"COFFEE EMPIRE GOES PUBLIC. IPO price $420.69 per share."'},
+  {at:1e9,m:'"BILLIONAIRE: Empire covers every continent. Dark Roast in crisis."'},
+];
+const TUTSLIDES=[
+  {ico:'☕',title:'Welcome to Coffee Empire!',body:'Watch your café come alive on screen. Customers walk in, get served, and your empire grows. Starting from a street cart — ending as a global brand.'},
+  {ico:'👆',title:'Click the Counter',body:'Click anywhere on your café scene to manually serve customers. Build up a combo multiplier for massive earnings — up to ×200!'},
+  {ico:'🛒',title:'Buy Generators',body:'Hire staff and buy equipment in the Brewers tab. Each generator earns money automatically, every second, even when you\'re away.'},
+  {ico:'☠️',title:'Watch The Rival',body:'Dark Roast Corp will try to steal your customers! Keep your Reputation high by clicking actively. Buy the Rival Shield upgrade to protect yourself.'},
+  {ico:'⏰',title:'Rush Hour Events',body:'Random Rush Hours flood your café with 3× income for 30 seconds. They appear every 90–150 seconds — click like crazy when one hits!'},
+  {ico:'♻️',title:'Prestige for Power',body:'After earning $1 million total, Prestige for a permanent ×1.5 income multiplier. It stacks — serious players prestige multiple times.'},
+];
+const MISSION_TYPES=[
+  {id:'clicks',label:'Brew cups manually',base:35,scale:1.3,reward:120},
+  {id:'earn',label:'Earn money',base:600,scale:1.45,reward:180},
+  {id:'buy',label:'Buy generators',base:6,scale:1.25,reward:220},
+  {id:'rival',label:'Defeat Dark Roast attacks',base:2,scale:1.15,reward:260},
+  {id:'combo',label:'Reach combo multiplier',base:20,scale:1.2,reward:140},
+];
+
+const SKEY='ce_v5';
+let S={
+  m:0,tot:0,spent:0,clicks:0,
+  g:{},ub:new Set(),ab:new Set(),
+  cpc:.1,cps:0,
+  combo:1,maxC:1,cTimer:0,
+  audioOn:true,
+  rushOn:false,rushT:0,rushes:0,
+  rep:60,repSpeed:1,rivalDrain:1,rivalSteal:1,
+  rivalActive:false,rivalT:0,rivalDefeats:0,
+  pc:0,pm:1,tg:0,
+  boostT:0,boostM:1,
+  missionLevel:1,
+  mission:{type:'clicks',target:30,reward:120},
+  missionBase:{clicks:0,earn:0,buy:0,rival:0,combo:1},
+  saveAt:Date.now(),
+  lastDay:0,dailyClaims:0,
+  tutDone:false,
+  buyMode:1,
+  newsShown:new Set(),
+  tickIdx:0,tickT:20,
+  adCooldown:0,adDisabled:false,
+  adRewardBusy:false,
+  nextRush:90+Math.random()*120,
+  nextRival:35+Math.random()*45,
+};
+
+function saveFn(){
+  const d={...S,ub:[...S.ub],ab:[...S.ab],newsShown:[...S.newsShown],saveAt:Date.now()};
+  try{localStorage.setItem(SKEY,JSON.stringify(d));}catch(e){}
+  CG.save(d);
 }
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{font-size:14px}
-body{background:#07040200;background-color:#060402;color:var(--text);
-  font-family:'Inter',sans-serif;height:100vh;overflow:hidden;
-  user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;}
-#grain{position:fixed;inset:0;pointer-events:none;z-index:9990;opacity:.022;
-  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.78' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
-#shell{display:grid;grid-template:"hdr hdr" 50px "scene panel" 1fr "tick tick" 25px / 1fr 305px;height:100vh;}
-#hdr{grid-area:hdr;display:flex;align-items:center;justify-content:space-between;
-  padding:0 16px;background:rgba(10,6,2,.97);border-bottom:1px solid var(--border);z-index:100;}
-.logo{font-family:'Playfair Display',serif;font-weight:900;font-size:1.08rem;
-  color:var(--a2);text-shadow:0 0 16px rgba(224,156,40,.48);}
-.logo small{font-family:'DM Mono',monospace;font-size:.48rem;color:var(--t3);
-  letter-spacing:.2em;text-transform:uppercase;display:block;margin-top:-4px;}
-#huds{display:flex;gap:18px;}
-.hdr-actions{display:flex;align-items:center;gap:8px;}
-.hbtn{border:1px solid var(--border);background:rgba(196,128,14,.08);color:var(--a2);border-radius:6px;padding:4px 8px;font:500 .62rem/1 'DM Mono',monospace;cursor:pointer}
-.hbtn:hover{background:rgba(196,128,14,.16)}
-.hs{display:flex;flex-direction:column;align-items:flex-end;}
-.hsl{font-size:.48rem;text-transform:uppercase;letter-spacing:.18em;color:var(--t3);font-family:'DM Mono',monospace;}
-.hsv{font-family:'DM Mono',monospace;font-size:.82rem;font-weight:500;color:var(--a2);}
-#scene{grid-area:scene;position:relative;overflow:hidden;background:#0a0604;cursor:pointer;}
-#cv{display:block;width:100%;height:100%;}
-#scene-ui{position:absolute;inset:0;pointer-events:none;}
-#rival{position:absolute;top:10px;left:50%;transform:translateX(-50%);
-  display:flex;align-items:center;gap:8px;padding:5px 14px;
-  background:rgba(10,4,2,.92);border:1px solid rgba(255,85,0,.3);
-  border-radius:var(--r);font-size:.58rem;font-family:'DM Mono',monospace;
-  opacity:0;transition:opacity .4s;}
-#rival.show{opacity:1;}
-.rival-lbl{color:var(--t3);}
-.rival-bar-bg{width:80px;height:4px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden;}
-.rival-bar-fill{height:100%;background:linear-gradient(90deg,#ff5500,#ff2200);border-radius:99px;transition:width .3s;}
-#rival-name{color:var(--hot);font-weight:500;}
-#repbar{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);
-  display:flex;align-items:center;gap:8px;padding:5px 14px;
-  background:rgba(10,4,2,.88);border:1px solid var(--border);border-radius:var(--r);}
-.rep-lbl{font-size:.56rem;font-family:'DM Mono',monospace;color:var(--t3);}
-.rep-track{width:110px;height:5px;background:rgba(255,255,255,.07);border-radius:99px;overflow:hidden;}
-.rep-fill{height:100%;background:linear-gradient(90deg,#f87171,#fbbf24,#34d399);border-radius:99px;transition:width .4s;}
-#rep-pct{font-family:'DM Mono',monospace;font-size:.58rem;color:var(--a2);}
-#evtb{position:absolute;top:10px;right:10px;
-  background:rgba(20,4,0,.95);border:1px solid rgba(255,85,0,.4);
-  border-radius:var(--r);padding:7px 14px;text-align:center;min-width:160px;
-  box-shadow:0 0 22px rgba(255,85,0,.15);
-  transform:translateX(130%);transition:transform .45s cubic-bezier(.34,1.4,.64,1);z-index:20;}
-#evtb.on{transform:translateX(0);}
-#evtt{font-family:'Playfair Display',serif;font-size:.88rem;font-weight:700;color:var(--hot);}
-#evts{font-size:.58rem;color:var(--t2);font-family:'DM Mono',monospace;margin-top:1px;}
-#evtp{height:3px;background:var(--hot);border-radius:99px;margin-top:6px;transform-origin:left;}
-#tierbadge{position:absolute;top:10px;left:10px;
-  display:flex;align-items:center;gap:6px;padding:4px 12px;
-  background:rgba(10,6,2,.88);border:1px solid rgba(196,128,14,.2);
-  border-radius:20px;font-size:.56rem;font-weight:700;
-  letter-spacing:.14em;text-transform:uppercase;color:var(--a2);
-  font-family:'DM Mono',monospace;}
-.mission{position:absolute;top:38px;left:10px;min-width:190px;max-width:240px;padding:7px 10px;border-radius:10px;border:1px solid rgba(196,128,14,.28);background:rgba(8,6,2,.9)}
-.mission-cap{font:600 .5rem/1.2 'DM Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--a1)}
-.mission-text{margin-top:4px;font-size:.6rem;color:var(--text);line-height:1.35}
-.mission-track{margin-top:5px;height:4px;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden}
-.mission-fill{height:100%;background:linear-gradient(90deg,var(--a1),var(--a3));width:0%;transition:width .2s}
-.mission-rw{margin-top:4px;font:500 .52rem/1 'DM Mono',monospace;color:var(--green)}
-.tdd{width:5px;height:5px;border-radius:50%;background:var(--a1);
-  box-shadow:0 0 5px var(--a1);animation:tdp 2s ease-in-out infinite;}
-@keyframes tdp{0%,100%{opacity:1;}50%{opacity:.2;}}
-.fl{position:fixed;pointer-events:none;z-index:500;
-  font-family:'DM Mono',monospace;font-weight:500;font-size:.82rem;
-  color:var(--a2);animation:flu .85s ease-out forwards;}
-.fl.big{font-size:1rem;color:var(--hot);}
-.fl.steal{color:#f87171;}
-.fl.bad{color:#fca5a5;}
-@keyframes flu{0%{opacity:1;transform:translateY(0);}50%{opacity:1;}100%{opacity:0;transform:translateY(-62px);}}
-#panel{grid-area:panel;display:flex;flex-direction:column;
-  background:var(--s0);border-left:1px solid var(--border);overflow:hidden;}
-#buybar{display:flex;margin:7px 7px 0;gap:2px;
-  background:rgba(0,0,0,.28);border:1px solid var(--border);border-radius:var(--rs);padding:3px;}
-.bybtn{flex:1;padding:4px 2px;border:none;border-radius:5px;background:none;
-  font-family:'DM Mono',monospace;font-size:.58rem;color:var(--t3);cursor:pointer;transition:all .13s;}
-.bybtn.on{background:rgba(196,128,14,.15);color:var(--a2);}
-#tabs{display:flex;margin-top:5px;border-bottom:1px solid var(--border);}
-.tab{flex:1;padding:7px 2px;border:none;border-bottom:2px solid transparent;
-  background:none;font-size:.52rem;font-weight:700;text-transform:uppercase;
-  letter-spacing:.09em;color:var(--t3);cursor:pointer;transition:all .14s;font-family:'Inter',sans-serif;}
-.tab.on{color:var(--a2);border-bottom-color:var(--a1);} 
+function loadFn(){
+  try{
+    const r=localStorage.getItem(SKEY);
+    if(!r)return false;
+    const d=JSON.parse(r);
+    S={...S,...d,ub:new Set(d.ub||[]),ab:new Set(d.ab||[]),newsShown:new Set(d.newsShown||[])};
+    return true;
+  }catch(e){return false;}
+}
+
+function fmt(n){
+  if(n>=1e12)return'$'+(n/1e12).toFixed(2)+'T';
+  if(n>=1e9)return'$'+(n/1e9).toFixed(2)+'B';
+  if(n>=1e6)return'$'+(n/1e6).toFixed(2)+'M';
+  if(n>=1e3)return'$'+(n/1e3).toFixed(2)+'K';
+  return'$'+n.toFixed(2);
+}
+function fmtT(s){s=Math.floor(s);if(s<60)return s+'s';if(s<3600)return Math.floor(s/60)+'m '+s%60+'s';return Math.floor(s/3600)+'h '+Math.floor(s%3600/60)+'m';}
+function gcost(g,n){n=n||1;const o=S.g[g.id]||0;if(n===1)return g.base*Math.pow(g.mult,o);return g.base*Math.pow(g.mult,o)*(Math.pow(g.mult,n)-1)/(g.mult-1);}
+function maxBuy(g){let n=0,c=0,o=S.g[g.id]||0;while(n<9999){const nx=g.base*Math.pow(g.mult,o+n);if(c+nx>S.m)break;c+=nx;n++;}return n;}
+function getBuyN(g){if(S.buyMode==='max')return Math.max(maxBuy(g),0);return S.buyMode;}
+function upgOk(u){if(!u.req)return true;if(u.req.g)return(S.g[u.req.g]||0)>=u.req.n;if(u.req.earned)return S.tot>=u.req.earned;if(u.req.spent)return S.spent>=u.req.spent;return true;}
+function repLeaveChance(){
+  if(S.rep>=45)return 0;
+  return Math.min(.5,(45-S.rep)/90);
+}
+function repPayMultiplier(){
+  if(S.rep>=70)return 1;
+  if(S.rep>=40)return .85;
+  return .65;
+}
+function recalc(){
+  let cpcA=0,cpcM=1,glob=S.pm,repSpeedM=1,rivalDrain=1,rivalSteal=1;
+  const gm={};GENS.forEach(g=>gm[g.id]=1);
+  for(const uid of S.ub){
+    const u=UPGS.find(x=>x.id===uid);if(!u)continue;
+    const{t,v,g}=u.eff;
+    if(t==='cpcA')cpcA+=v;
+    if(t==='cpcM')cpcM*=v;
+    if(t==='gm')gm[g]=(gm[g]||1)*v;
+    if(t==='glob')glob*=v;
+    if(t==='repS')repSpeedM*=v;
+    if(t==='repD'){rivalDrain*=v;rivalSteal*=v;}
+  }
+  let cps=0;GENS.forEach(g=>cps+=(S.g[g.id]||0)*g.cps*(gm[g.id]||1));
+  const boost=S.boostT>0?S.boostM:1;
+  S.cpc=(.1+cpcA)*cpcM*glob*boost;
+  S.cps=cps*glob*boost;
+  S.repSpeed=repSpeedM;
+  S.rivalDrain=rivalDrain;
+  S.rivalSteal=rivalSteal;
+}
+function makeMission(){
+  const tpl=MISSION_TYPES[(S.missionLevel-1)%MISSION_TYPES.length];
+  const target=Math.max(1,Math.floor(tpl.base*Math.pow(tpl.scale,S.missionLevel-1)));
+  const reward=Math.floor(tpl.reward*Math.pow(1.28,S.missionLevel-1));
+  const mission={type:tpl.id,target,reward};
+  S.mission=mission;
+  S.missionBase={
+    clicks:S.clicks,
+    earn:S.tot,
+    buy:S.tg,
+    rival:S.rivalDefeats,
+    combo:S.maxC,
+  };
+}
+function missionProgress(){
+  if(!S.mission)return 0;
+  const b=S.missionBase||{};
+  if(S.mission.type==='clicks')return Math.max(0,S.clicks-(b.clicks||0));
+  if(S.mission.type==='earn')return Math.max(0,S.tot-(b.earn||0));
+  if(S.mission.type==='buy')return Math.max(0,S.tg-(b.buy||0));
+  if(S.mission.type==='rival')return Math.max(0,S.rivalDefeats-(b.rival||0));
+  if(S.mission.type==='combo')return Math.max(0,S.maxC-(b.combo||1)+1);
+  return 0;
+}
+function missionLabel(){
+  const m=S.mission;
+  if(!m)return'No mission'; 
